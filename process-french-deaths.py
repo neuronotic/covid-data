@@ -1,6 +1,5 @@
 # file_in = 'test.txt'
-file_in = 'deces-2020-m02.txt'
-file_out = 'french-deaths.txt'
+
 DATE_FORMAT = '%Y%m%d'
 
 
@@ -16,8 +15,8 @@ def parse_tolerant_of_errors(raw_date):
     try:
         return parse(raw_date)
     except ValueError:
-        if (mont_is_not_set(raw_date)):
-            if (day_is_not_set(raw_date)):
+        if month_is_not_set(raw_date):
+            if day_is_not_set(raw_date):
                 return parse(raw_date[0:4] + "0101")
             else:
                 return parse(raw_date[0:6] + "01")
@@ -34,7 +33,7 @@ def day_is_not_set(raw_date):
     return raw_date[4:6] == "00"
 
 
-def mont_is_not_set(raw_date):
+def month_is_not_set(raw_date):
     return raw_date[6:8] == "00"
 
 
@@ -52,20 +51,35 @@ def serialise(record):
     return "%s,%s,%.1f,%s\n" % (dod, sex, age_in_years, geographic_code_at_death)
 
 
-def process_file(filename):
-    with open(filename, "r") as file:
-        return [parse_line(line) for line in file]
+def process_file(input_path, output_path, error_path):
+    processed_count = 0
+    error_count = 0
+    import os
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    with open(output_path, "w") as output_file, \
+            open(error_path, "w") as error_file, \
+            open(input_path, "r", errors='replace') as input_file:
+        for line in input_file:
+            try:
+                data = parse_line(line)
+                output_file.write(serialise(data))
+                processed_count += 1
+            except ValueError as e:
+                print(e)
+                error_file.write(line)
+                error_count += 1
+    print("processed %s.\n\tcount=%d\terrors=%d" % (input_path, processed_count, error_count))
 
 
-def write_to_file(records, filename):
-    with open(filename, "w") as file:
-        for record in records:
-            file.write(serialise(record))
+def process_files(source_path, output_path):
+    from os import walk
+    (_, _, filenames) = next(walk(source_path))
+    for filename in filenames:
+        process_file(source_path + "/" + filename,
+                     output_path + "/processed-" + filename,
+                     output_path + "/errors-" + filename)
 
 
 print("starting to process")
-data = process_file(file_in)
-write_to_file(data, file_out)
-print("processed %d lines" % len(data))
-
-
+process_files('source_data', 'output2')
+# print("processed %d lines" % counter)
