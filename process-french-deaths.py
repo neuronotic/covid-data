@@ -1,7 +1,16 @@
-# file_in = 'test.txt'
-
 DATE_FORMAT = '%Y%m%d'
 
+"""
+This is a utility script to transform the data found at:
+https://www.data.gouv.fr/fr/datasets/fichier-des-personnes-decedees/
+
+When run, will operate on all files located in the 'source_data' directory.
+For each file, will generate:
+- an output file containg transformed data: (date of death, sex, age, geographical code)
+- an error file with all the input lines that couldn't be parsed.
+
+to use on command line, from script directory: python process-french-deaths.py 
+"""
 
 def determine_age(raw_dob, raw_dod):
     date_of_birth = parse_tolerant_of_errors(raw_dob)
@@ -70,6 +79,10 @@ def process_file(input_path, output_path, error_path):
                 error_count += 1
     print("processed %s.\n\tcount=%d\terrors=%d" % (input_path, processed_count, error_count))
 
+    # remove opened error file if there were no errors.
+    if os.stat(error_path).st_size == 0:
+        os.remove(error_path)
+
 
 def process_files(source_path, output_path):
     from os import walk
@@ -81,5 +94,7 @@ def process_files(source_path, output_path):
 
 
 print("starting to process")
-process_files('source_data', 'output2')
-# print("processed %d lines" % counter)
+source_data_path = './source_data'
+output_path = 'output'
+process_files(source_data_path, output_path)
+print("finished processing")
